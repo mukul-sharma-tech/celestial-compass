@@ -13,6 +13,9 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Outfit', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -47,15 +50,38 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background))",
-          foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
+        glass: {
+          DEFAULT: "hsl(var(--glass))",
+          border: "hsl(var(--glass-border))",
+        },
+        star: {
+          o: "hsl(var(--star-o))",
+          b: "hsl(var(--star-b))",
+          a: "hsl(var(--star-a))",
+          f: "hsl(var(--star-f))",
+          g: "hsl(var(--star-g))",
+          k: "hsl(var(--star-k))",
+          m: "hsl(var(--star-m))",
+        },
+        planet: {
+          mercury: "hsl(var(--planet-mercury))",
+          venus: "hsl(var(--planet-venus))",
+          mars: "hsl(var(--planet-mars))",
+          jupiter: "hsl(var(--planet-jupiter))",
+          saturn: "hsl(var(--planet-saturn))",
+        },
+        celestial: {
+          moon: "hsl(var(--moon))",
+          sun: "hsl(var(--sun))",
+        },
+        milky: {
+          core: "hsl(var(--milky-core))",
+          dust: "hsl(var(--milky-dust))",
+          glow: "hsl(var(--milky-glow))",
+        },
+        constellation: {
+          line: "hsl(var(--constellation-line))",
+          label: "hsl(var(--constellation-label))",
         },
       },
       borderRadius: {
@@ -65,25 +91,27 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "fade-in": {
+          from: { opacity: "0", transform: "translateY(10px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "slide-in-right": {
+          from: { opacity: "0", transform: "translateX(20px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.3s ease-out",
+        "slide-in-right": "slide-in-right 0.3s ease-out",
       },
     },
   },
