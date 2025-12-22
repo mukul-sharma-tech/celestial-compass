@@ -1,96 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Cosmic dark theme - optimized for stargazing */
+    --background: 220 50% 2%;
+    --foreground: 210 30% 95%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 220 40% 5%;
+    --card-foreground: 210 30% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 220 40% 5%;
+    --popover-foreground: 210 30% 95%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 200 80% 60%;
+    --primary-foreground: 220 50% 5%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 30% 12%;
+    --secondary-foreground: 210 30% 90%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 25% 15%;
+    --muted-foreground: 215 20% 60%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 180 60% 50%;
+    --accent-foreground: 220 50% 5%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 210 30% 95%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 220 30% 18%;
+    --input: 220 30% 15%;
+    --ring: 200 80% 60%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Star colors based on spectral classification */
+    --star-o: 210 100% 85%; /* Blue-white O-type */
+    --star-b: 210 80% 80%;  /* Blue B-type */
+    --star-a: 200 30% 95%;  /* White A-type */
+    --star-f: 45 30% 90%;   /* Yellow-white F-type */
+    --star-g: 45 60% 75%;   /* Yellow G-type (like Sun) */
+    --star-k: 30 70% 60%;   /* Orange K-type */
+    --star-m: 10 80% 50%;   /* Red M-type */
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Celestial object colors */
+    --planet-mercury: 30 20% 60%;
+    --planet-venus: 45 50% 85%;
+    --planet-mars: 10 70% 55%;
+    --planet-jupiter: 35 40% 70%;
+    --planet-saturn: 40 45% 75%;
+    --moon: 45 10% 90%;
+    --sun: 45 100% 60%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Milky Way gradient colors */
+    --milky-core: 25 60% 70%;
+    --milky-dust: 280 30% 60%;
+    --milky-glow: 200 40% 80%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    /* Constellation colors */
+    --constellation-line: 200 60% 50%;
+    --constellation-label: 200 40% 70%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    /* UI Glass effect */
+    --glass: 220 40% 8%;
+    --glass-border: 220 30% 25%;
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Glow effects */
+    --glow-star: 0 0 20px;
+    --glow-planet: 0 0 30px;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Same as root - this is a dark-only app */
+    --background: 220 50% 2%;
+    --foreground: 210 30% 95%;
   }
 }
 
@@ -99,7 +85,84 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground;
+  html {
+    font-family: 'Outfit', sans-serif;
   }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    overflow: hidden;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-glass/80 backdrop-blur-xl border border-glass-border/50;
+  }
+
+  .star-glow {
+    filter: blur(0.5px);
+    box-shadow: 0 0 6px currentColor, 0 0 12px currentColor;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+  }
+
+  .constellation-line {
+    stroke: hsl(var(--constellation-line));
+    stroke-width: 0.5;
+    opacity: 0.4;
+  }
+}
+
+/* Star twinkling animation */
+@keyframes twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes gentle-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+@keyframes meteor {
+  0% { transform: translateX(0) translateY(0); opacity: 1; }
+  100% { transform: translateX(200px) translateY(200px); opacity: 0; }
+}
+
+.animate-twinkle {
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+.animate-pulse-gentle {
+  animation: gentle-pulse 4s ease-in-out infinite;
+}
+
+/* Canvas styling */
+.sky-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  cursor: grab;
+}
+
+.sky-canvas:active {
+  cursor: grabbing;
+}
+
+/* Custom scrollbar for info panels */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--glass));
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 2px;
 }
