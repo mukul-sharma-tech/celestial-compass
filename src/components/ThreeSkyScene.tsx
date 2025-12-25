@@ -1,5 +1,5 @@
-import { useRef, useMemo, useEffect } from 'react';
-import { Canvas, useFrame, useThree, extend } from '@react-three/fiber';
+import { useRef, useMemo, useEffect, useImperativeHandle, forwardRef } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { allStars, deepSkyObjects } from '@/data/starCatalog';
@@ -10,6 +10,7 @@ import {
   getMoonPosition,
   getPlanetPositions,
 } from '@/lib/astronomy';
+import { NorthernLights } from './NorthernLights';
 
 interface ThreeSkySceneProps {
   location: { latitude: number; longitude: number };
@@ -18,7 +19,9 @@ interface ThreeSkySceneProps {
   showPlanets: boolean;
   showDeepSky: boolean;
   showMilkyWay: boolean;
+  showNorthernLights: boolean;
   onObjectSelect: (object: { type: string; name: string; data: any } | null) => void;
+  cameraRef?: React.RefObject<{ rotate: (dx: number, dy: number) => void }>;
 }
 
 // Enhanced star vertex shader with atmospheric scintillation
@@ -696,17 +699,31 @@ function Moon({ location, date }: { location: { latitude: number; longitude: num
   );
 }
 
-// Camera controller
-function CameraController() {
+// Camera controller with external control support
+function CameraController({ cameraRef }: { cameraRef?: React.RefObject<{ rotate: (dx: number, dy: number) => void }> }) {
   const { camera } = useThree();
+  const controlsRef = useRef<any>(null);
   
   useEffect(() => {
     camera.position.set(0, 0, 0.1);
     camera.lookAt(0, 0, -1);
   }, [camera]);
 
+  useImperativeHandle(cameraRef, () => ({
+    rotate: (dx: number, dy: number) => {
+      if (controlsRef.current) {
+        const azimuth = controlsRef.current.getAzimuthalAngle();
+        const polar = controlsRef.current.getPolarAngle();
+        controlsRef.current.setAzimuthalAngle(azimuth + dx);
+        controlsRef.current.setPolarAngle(Math.max(0.1, Math.min(Math.PI - 0.1, polar + dy)));
+        controlsRef.current.update();
+      }
+    }
+  }), []);
+
   return (
     <OrbitControls
+      ref={controlsRef}
       enableZoom
       enablePan={false}
       enableRotate
@@ -738,21 +755,26 @@ export function ThreeSkyScene({
   showPlanets,
   showDeepSky,
   showMilkyWay,
+  showNorthernLights,
+  cameraRef,
 }: ThreeSkySceneProps) {
   return (
     <Canvas
       camera={{ fov: 75, near: 0.001, far: 2000, position: [0, 0, 0.1] }}
       gl={{ 
         antialias: true, 
-        alpha: false,
+        alpha: true,
         powerPreference: 'high-performance',
       }}
-      style={{ background: '#000005' }}
+      style={{ background: 'transparent' }}
     >
-      <CameraController />
+      <CameraController cameraRef={cameraRef} />
       
       {/* Dark sky background */}
       <SkyGradient />
+      
+      {/* Northern Lights */}
+      <NorthernLights enabled={showNorthernLights} intensity={1.2} />
       
       {/* Volumetric Milky Way */}
       {showMilkyWay && <MilkyWay />}

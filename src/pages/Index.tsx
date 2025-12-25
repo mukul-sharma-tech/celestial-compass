@@ -1,9 +1,15 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ThreeSkyScene } from '@/components/ThreeSkyScene';
 import { ControlPanel } from '@/components/ControlPanel';
 import { ObjectInfo } from '@/components/ObjectInfo';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { CompassOverlay } from '@/components/CompassOverlay';
+import { ARCameraBackground } from '@/components/ARCameraBackground';
+import { SearchBox } from '@/components/SearchBox';
+import { JoystickController } from '@/components/JoystickController';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Sparkles } from 'lucide-react';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -16,6 +22,7 @@ const Index = () => {
   const [showPlanets, setShowPlanets] = useState(true);
   const [showDeepSky, setShowDeepSky] = useState(true);
   const [showMilkyWay, setShowMilkyWay] = useState(true);
+  const [showNorthernLights, setShowNorthernLights] = useState(false);
   const [selectedObject, setSelectedObject] = useState<{
     type: string;
     name: string;
@@ -27,6 +34,8 @@ const Index = () => {
     gamma: number;
   } | null>(null);
   const [arMode, setArMode] = useState(false);
+  
+  const cameraRef = useRef<{ rotate: (dx: number, dy: number) => void }>(null);
 
   // Request device orientation for AR mode
   useEffect(() => {
@@ -81,14 +90,31 @@ const Index = () => {
     setSelectedObject(obj);
   }, []);
 
+  const handleSearchSelect = useCallback((result: any) => {
+    setSelectedObject({
+      type: result.type,
+      name: result.name,
+      data: result,
+    });
+  }, []);
+
+  const handleJoystickMove = useCallback((dx: number, dy: number) => {
+    if (cameraRef.current) {
+      cameraRef.current.rotate(dx, dy);
+    }
+  }, []);
+
   if (isLoading) {
     return <LoadingScreen onComplete={() => setIsLoading(false)} />;
   }
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black">
+      {/* AR Camera Background */}
+      <ARCameraBackground enabled={arMode} />
+
       {/* Three.js Sky Scene */}
-      <div className="absolute inset-0">
+      <div className={`absolute inset-0 ${arMode ? 'opacity-70' : ''}`}>
         <ThreeSkyScene
           location={location}
           date={date}
@@ -96,9 +122,14 @@ const Index = () => {
           showPlanets={showPlanets}
           showDeepSky={showDeepSky}
           showMilkyWay={showMilkyWay}
+          showNorthernLights={showNorthernLights}
           onObjectSelect={handleObjectSelect}
+          cameraRef={cameraRef}
         />
       </div>
+
+      {/* Search Box */}
+      <SearchBox onSelectObject={handleSearchSelect} />
 
       {/* Compass overlay */}
       <CompassOverlay 
@@ -127,10 +158,26 @@ const Index = () => {
         onClose={() => setSelectedObject(null)}
       />
 
+      {/* Joystick Controller */}
+      <JoystickController onMove={handleJoystickMove} />
+
+      {/* Northern Lights Toggle */}
+      <div className="fixed bottom-20 left-4 z-50 glass rounded-xl p-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-green-400" />
+          <Label htmlFor="aurora" className="text-sm text-foreground/80">Aurora</Label>
+          <Switch
+            id="aurora"
+            checked={showNorthernLights}
+            onCheckedChange={setShowNorthernLights}
+          />
+        </div>
+      </div>
+
       {/* AR Mode toggle */}
       <button
         onClick={() => setArMode(!arMode)}
-        className={`fixed bottom-20 right-4 z-50 glass rounded-full px-4 py-2 text-sm transition-all ${
+        className={`fixed bottom-36 right-4 z-50 glass rounded-full px-4 py-2 text-sm transition-all ${
           arMode ? 'bg-primary/30 text-primary' : 'text-muted-foreground'
         }`}
       >
@@ -140,7 +187,7 @@ const Index = () => {
       {/* Instructions hint */}
       <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40 animate-fade-in">
         <div className="glass rounded-full px-6 py-2 text-sm text-muted-foreground">
-          Drag to explore • Pinch to zoom • Stars twinkle realistically
+          Drag to explore • Use joystick to navigate • Search for objects
         </div>
       </div>
     </div>
