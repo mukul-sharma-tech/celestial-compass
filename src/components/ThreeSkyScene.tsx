@@ -11,17 +11,23 @@ import {
   getPlanetPositions,
 } from '@/lib/astronomy';
 import { NorthernLights } from './NorthernLights';
+import { ShootingStars } from './ShootingStars';
+import { ConstellationLines } from './ConstellationLines';
 
 interface ThreeSkySceneProps {
   location: { latitude: number; longitude: number };
   date: Date;
   showConstellations: boolean;
+  showConstellationLines: boolean;
   showPlanets: boolean;
   showDeepSky: boolean;
   showMilkyWay: boolean;
   showNorthernLights: boolean;
+  showShootingStars: boolean;
+  selectedConstellation?: string | null;
   onObjectSelect: (object: { type: string; name: string; data: any } | null) => void;
   cameraRef?: React.RefObject<{ rotate: (dx: number, dy: number) => void }>;
+  onNavigateTo?: (ra: number, dec: number) => void;
 }
 
 // Enhanced star vertex shader with atmospheric scintillation
@@ -752,10 +758,14 @@ function SkyGradient() {
 export function ThreeSkyScene({
   location,
   date,
+  showConstellations,
+  showConstellationLines,
   showPlanets,
   showDeepSky,
   showMilkyWay,
   showNorthernLights,
+  showShootingStars,
+  selectedConstellation,
   cameraRef,
 }: ThreeSkySceneProps) {
   return (
@@ -776,6 +786,9 @@ export function ThreeSkyScene({
       {/* Northern Lights */}
       <NorthernLights enabled={showNorthernLights} intensity={1.2} />
       
+      {/* Shooting Stars */}
+      <ShootingStars enabled={showShootingStars} intensity={1.5} />
+      
       {/* Volumetric Milky Way */}
       {showMilkyWay && <MilkyWay />}
       
@@ -784,6 +797,14 @@ export function ThreeSkyScene({
       
       {/* Main catalog stars with twinkling */}
       <RealisticStars location={location} date={date} />
+      
+      {/* Constellation Lines */}
+      <ConstellationLines 
+        enabled={showConstellationLines} 
+        location={location} 
+        date={date}
+        selectedConstellation={selectedConstellation}
+      />
       
       {/* Deep sky objects */}
       {showDeepSky && <DeepSkyObjects location={location} date={date} />}
