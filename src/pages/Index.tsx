@@ -7,33 +7,41 @@ import { CompassOverlay } from '@/components/CompassOverlay';
 import { ARCameraBackground } from '@/components/ARCameraBackground';
 import { SearchBox } from '@/components/SearchBox';
 import { JoystickController } from '@/components/JoystickController';
+import { MobileControlsPanel } from '@/components/MobileControlsPanel';
+import { TimeLapseController } from '@/components/TimeLapseController';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Zap, GitBranch, Clock } from 'lucide-react';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [date, setDate] = useState(new Date());
+  const [baseDate] = useState(new Date());
   const [location, setLocation] = useState({
     latitude: 40.7128,
     longitude: -74.0060,
   });
   const [showConstellations, setShowConstellations] = useState(true);
+  const [showConstellationLines, setShowConstellationLines] = useState(true);
   const [showPlanets, setShowPlanets] = useState(true);
   const [showDeepSky, setShowDeepSky] = useState(true);
   const [showMilkyWay, setShowMilkyWay] = useState(true);
   const [showNorthernLights, setShowNorthernLights] = useState(false);
+  const [showShootingStars, setShowShootingStars] = useState(true);
+  const [timeLapseEnabled, setTimeLapseEnabled] = useState(false);
   const [selectedObject, setSelectedObject] = useState<{
     type: string;
     name: string;
     data: any;
   } | null>(null);
+  const [selectedConstellation, setSelectedConstellation] = useState<string | null>(null);
   const [deviceOrientation, setDeviceOrientation] = useState<{
     alpha: number;
     beta: number;
     gamma: number;
   } | null>(null);
   const [arMode, setArMode] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   
   const cameraRef = useRef<{ rotate: (dx: number, dy: number) => void }>(null);
 
@@ -88,6 +96,9 @@ const Index = () => {
 
   const handleObjectSelect = useCallback((obj: { type: string; name: string; data: any } | null) => {
     setSelectedObject(obj);
+    if (obj?.type === 'constellation') {
+      setSelectedConstellation(obj.name);
+    }
   }, []);
 
   const handleSearchSelect = useCallback((result: any) => {
@@ -96,6 +107,10 @@ const Index = () => {
       name: result.name,
       data: result,
     });
+    if (result.type === 'constellation') {
+      setSelectedConstellation(result.name);
+    }
+    setSearchOpen(false);
   }, []);
 
   const handleJoystickMove = useCallback((dx: number, dy: number) => {
@@ -119,29 +134,147 @@ const Index = () => {
           location={location}
           date={date}
           showConstellations={showConstellations}
+          showConstellationLines={showConstellationLines}
           showPlanets={showPlanets}
           showDeepSky={showDeepSky}
           showMilkyWay={showMilkyWay}
           showNorthernLights={showNorthernLights}
+          showShootingStars={showShootingStars}
+          selectedConstellation={selectedConstellation}
           onObjectSelect={handleObjectSelect}
           cameraRef={cameraRef}
         />
       </div>
 
-      {/* Search Box */}
-      <SearchBox onSelectObject={handleSearchSelect} />
+      {/* Search Box - Desktop */}
+      <div className="hidden md:block">
+        <SearchBox onSelectObject={handleSearchSelect} />
+      </div>
+
+      {/* Search Box - Mobile (triggered by button) */}
+      {searchOpen && (
+        <div className="md:hidden fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm">
+          <div className="pt-4">
+            <SearchBox onSelectObject={handleSearchSelect} />
+          </div>
+          <button 
+            className="absolute inset-0 -z-10" 
+            onClick={() => setSearchOpen(false)}
+          />
+        </div>
+      )}
 
       {/* Compass overlay */}
       <CompassOverlay 
         azimuth={deviceOrientation?.alpha || 180} 
       />
 
-      {/* Control panel */}
-      <ControlPanel
-        date={date}
-        onDateChange={setDate}
-        location={location}
-        onLocationChange={setLocation}
+      {/* Control panel - Desktop */}
+      <div className="hidden md:block">
+        <ControlPanel
+          date={date}
+          onDateChange={setDate}
+          location={location}
+          onLocationChange={setLocation}
+          showConstellations={showConstellations}
+          onShowConstellationsChange={setShowConstellations}
+          showPlanets={showPlanets}
+          onShowPlanetsChange={setShowPlanets}
+          showDeepSky={showDeepSky}
+          onShowDeepSkyChange={setShowDeepSky}
+          showMilkyWay={showMilkyWay}
+          onShowMilkyWayChange={setShowMilkyWay}
+        />
+      </div>
+
+      {/* Object info panel */}
+      <ObjectInfo
+        object={selectedObject}
+        onClose={() => {
+          setSelectedObject(null);
+          setSelectedConstellation(null);
+        }}
+      />
+
+      {/* Joystick Controller */}
+      <JoystickController onMove={handleJoystickMove} />
+
+      {/* Desktop Controls - Bottom Left */}
+      <div className="hidden md:flex fixed bottom-20 left-4 z-50 flex-col gap-2">
+        {/* Northern Lights Toggle */}
+        <div className="glass rounded-xl p-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-green-400" />
+            <Label htmlFor="aurora" className="text-sm text-foreground/80">Aurora</Label>
+            <Switch
+              id="aurora"
+              checked={showNorthernLights}
+              onCheckedChange={setShowNorthernLights}
+            />
+          </div>
+        </div>
+
+        {/* Shooting Stars Toggle */}
+        <div className="glass rounded-xl p-3">
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-yellow-400" />
+            <Label htmlFor="meteors" className="text-sm text-foreground/80">Meteors</Label>
+            <Switch
+              id="meteors"
+              checked={showShootingStars}
+              onCheckedChange={setShowShootingStars}
+            />
+          </div>
+        </div>
+
+        {/* Constellation Lines Toggle */}
+        <div className="glass rounded-xl p-3">
+          <div className="flex items-center gap-2">
+            <GitBranch className="w-4 h-4 text-blue-400" />
+            <Label htmlFor="lines" className="text-sm text-foreground/80">Lines</Label>
+            <Switch
+              id="lines"
+              checked={showConstellationLines}
+              onCheckedChange={setShowConstellationLines}
+            />
+          </div>
+        </div>
+
+        {/* Time-Lapse Toggle */}
+        <div className="glass rounded-xl p-3">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-primary" />
+            <Label htmlFor="timelapse" className="text-sm text-foreground/80">Time-Lapse</Label>
+            <Switch
+              id="timelapse"
+              checked={timeLapseEnabled}
+              onCheckedChange={setTimeLapseEnabled}
+            />
+          </div>
+        </div>
+
+        {/* Time-Lapse Controller */}
+        <TimeLapseController
+          enabled={timeLapseEnabled}
+          onToggle={() => setTimeLapseEnabled(!timeLapseEnabled)}
+          onDateChange={setDate}
+          baseDate={baseDate}
+          isVisible={timeLapseEnabled}
+        />
+      </div>
+
+      {/* AR Mode toggle - Desktop */}
+      <button
+        onClick={() => setArMode(!arMode)}
+        className={`hidden md:block fixed bottom-36 right-4 z-50 glass rounded-full px-4 py-2 text-sm transition-all ${
+          arMode ? 'bg-primary/30 text-primary' : 'text-muted-foreground'
+        }`}
+      >
+        {arMode ? 'AR ON' : 'AR OFF'}
+      </button>
+
+      {/* Mobile Controls Panel */}
+      <MobileControlsPanel
         showConstellations={showConstellations}
         onShowConstellationsChange={setShowConstellations}
         showPlanets={showPlanets}
@@ -150,42 +283,23 @@ const Index = () => {
         onShowDeepSkyChange={setShowDeepSky}
         showMilkyWay={showMilkyWay}
         onShowMilkyWayChange={setShowMilkyWay}
+        showNorthernLights={showNorthernLights}
+        onShowNorthernLightsChange={setShowNorthernLights}
+        showShootingStars={showShootingStars}
+        onShowShootingStarsChange={setShowShootingStars}
+        showConstellationLines={showConstellationLines}
+        onShowConstellationLinesChange={setShowConstellationLines}
+        arMode={arMode}
+        onArModeChange={setArMode}
+        timeLapseEnabled={timeLapseEnabled}
+        onTimeLapseToggle={() => setTimeLapseEnabled(!timeLapseEnabled)}
+        onDateChange={setDate}
+        baseDate={baseDate}
+        onSearchOpen={() => setSearchOpen(true)}
       />
 
-      {/* Object info panel */}
-      <ObjectInfo
-        object={selectedObject}
-        onClose={() => setSelectedObject(null)}
-      />
-
-      {/* Joystick Controller */}
-      <JoystickController onMove={handleJoystickMove} />
-
-      {/* Northern Lights Toggle */}
-      <div className="fixed bottom-20 left-4 z-50 glass rounded-xl p-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-green-400" />
-          <Label htmlFor="aurora" className="text-sm text-foreground/80">Aurora</Label>
-          <Switch
-            id="aurora"
-            checked={showNorthernLights}
-            onCheckedChange={setShowNorthernLights}
-          />
-        </div>
-      </div>
-
-      {/* AR Mode toggle */}
-      <button
-        onClick={() => setArMode(!arMode)}
-        className={`fixed bottom-36 right-4 z-50 glass rounded-full px-4 py-2 text-sm transition-all ${
-          arMode ? 'bg-primary/30 text-primary' : 'text-muted-foreground'
-        }`}
-      >
-        {arMode ? 'AR ON' : 'AR OFF'}
-      </button>
-
-      {/* Instructions hint */}
-      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40 animate-fade-in">
+      {/* Instructions hint - Desktop only */}
+      <div className="hidden md:block fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40 animate-fade-in">
         <div className="glass rounded-full px-6 py-2 text-sm text-muted-foreground">
           Drag to explore • Use joystick to navigate • Search for objects
         </div>
