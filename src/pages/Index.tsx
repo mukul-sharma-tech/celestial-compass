@@ -9,9 +9,11 @@ import { SearchBox } from '@/components/SearchBox';
 import { JoystickController } from '@/components/JoystickController';
 import { MobileControlsPanel } from '@/components/MobileControlsPanel';
 import { TimeLapseController } from '@/components/TimeLapseController';
+import { VROverlay } from '@/components/VRMode';
+import { DeviceOrientationController } from '@/components/DeviceOrientationController';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Zap, GitBranch, Clock } from 'lucide-react';
+import { Sparkles, Zap, GitBranch, Clock, Satellite } from 'lucide-react';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -28,6 +30,7 @@ const Index = () => {
   const [showMilkyWay, setShowMilkyWay] = useState(true);
   const [showNorthernLights, setShowNorthernLights] = useState(false);
   const [showShootingStars, setShowShootingStars] = useState(true);
+  const [showISS, setShowISS] = useState(true);
   const [timeLapseEnabled, setTimeLapseEnabled] = useState(false);
   const [selectedObject, setSelectedObject] = useState<{
     type: string;
@@ -40,7 +43,10 @@ const Index = () => {
     beta: number;
     gamma: number;
   } | null>(null);
+  const [compassHeading, setCompassHeading] = useState(0);
   const [arMode, setArMode] = useState(false);
+  const [vrMode, setVrMode] = useState(false);
+  const [compassMode, setCompassMode] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   
   const cameraRef = useRef<{ rotate: (dx: number, dy: number) => void }>(null);
@@ -140,11 +146,24 @@ const Index = () => {
           showMilkyWay={showMilkyWay}
           showNorthernLights={showNorthernLights}
           showShootingStars={showShootingStars}
+          showISS={showISS}
+          vrMode={vrMode}
           selectedConstellation={selectedConstellation}
           onObjectSelect={handleObjectSelect}
           cameraRef={cameraRef}
         />
       </div>
+
+      {/* VR Mode Overlay */}
+      <VROverlay enabled={vrMode} onExit={() => setVrMode(false)} />
+
+      {/* Device Orientation Controller */}
+      <DeviceOrientationController
+        enabled={compassMode}
+        onOrientationChange={setDeviceOrientation}
+        onCompassChange={setCompassHeading}
+        cameraRef={cameraRef}
+      />
 
       {/* Search Box - Desktop */}
       <div className="hidden md:block">
@@ -166,7 +185,9 @@ const Index = () => {
 
       {/* Compass overlay */}
       <CompassOverlay 
-        azimuth={deviceOrientation?.alpha || 180} 
+        azimuth={deviceOrientation?.alpha || 180}
+        deviceHeading={compassHeading}
+        compassModeEnabled={compassMode}
       />
 
       {/* Control panel - Desktop */}
@@ -289,8 +310,14 @@ const Index = () => {
         onShowShootingStarsChange={setShowShootingStars}
         showConstellationLines={showConstellationLines}
         onShowConstellationLinesChange={setShowConstellationLines}
+        showISS={showISS}
+        onShowISSChange={setShowISS}
         arMode={arMode}
         onArModeChange={setArMode}
+        vrMode={vrMode}
+        onVrModeChange={setVrMode}
+        compassMode={compassMode}
+        onCompassModeChange={setCompassMode}
         timeLapseEnabled={timeLapseEnabled}
         onTimeLapseToggle={() => setTimeLapseEnabled(!timeLapseEnabled)}
         onDateChange={setDate}
