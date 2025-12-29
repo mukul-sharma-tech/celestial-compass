@@ -13,6 +13,7 @@ import {
 import { NorthernLights } from './NorthernLights';
 import { ShootingStars } from './ShootingStars';
 import { ConstellationLines } from './ConstellationLines';
+import { ISSTracker } from './ISSTracker';
 
 interface ThreeSkySceneProps {
   location: { latitude: number; longitude: number };
@@ -24,6 +25,8 @@ interface ThreeSkySceneProps {
   showMilkyWay: boolean;
   showNorthernLights: boolean;
   showShootingStars: boolean;
+  showISS: boolean;
+  vrMode: boolean;
   selectedConstellation?: string | null;
   onObjectSelect: (object: { type: string; name: string; data: any } | null) => void;
   cameraRef?: React.RefObject<{ rotate: (dx: number, dy: number) => void }>;
@@ -765,12 +768,14 @@ export function ThreeSkyScene({
   showMilkyWay,
   showNorthernLights,
   showShootingStars,
+  showISS,
+  vrMode,
   selectedConstellation,
   cameraRef,
 }: ThreeSkySceneProps) {
   return (
     <Canvas
-      camera={{ fov: 75, near: 0.001, far: 2000, position: [0, 0, 0.1] }}
+      camera={{ fov: vrMode ? 90 : 75, near: 0.001, far: 2000, position: [0, 0, 0.1] }}
       gl={{ 
         antialias: true, 
         alpha: true,
@@ -788,6 +793,9 @@ export function ThreeSkyScene({
       
       {/* Shooting Stars */}
       <ShootingStars enabled={showShootingStars} intensity={1.5} />
+      
+      {/* ISS Tracker */}
+      <ISSTracker enabled={showISS} location={location} date={date} />
       
       {/* Volumetric Milky Way */}
       {showMilkyWay && <MilkyWay />}
