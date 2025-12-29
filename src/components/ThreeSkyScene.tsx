@@ -27,6 +27,7 @@ interface ThreeSkySceneProps {
   showShootingStars: boolean;
   showISS: boolean;
   vrMode: boolean;
+  expansiveAurora?: boolean;
   selectedConstellation?: string | null;
   onObjectSelect: (object: { type: string; name: string; data: any } | null) => void;
   cameraRef?: React.RefObject<{ rotate: (dx: number, dy: number) => void }>;
@@ -770,6 +771,7 @@ export function ThreeSkyScene({
   showShootingStars,
   showISS,
   vrMode,
+  expansiveAurora = false,
   selectedConstellation,
   cameraRef,
 }: ThreeSkySceneProps) {
@@ -789,7 +791,7 @@ export function ThreeSkyScene({
       <SkyGradient />
       
       {/* Northern Lights */}
-      <NorthernLights enabled={showNorthernLights} intensity={1.2} />
+      <NorthernLights enabled={showNorthernLights} intensity={1.2} expansive={expansiveAurora} />
       
       {/* Shooting Stars */}
       <ShootingStars enabled={showShootingStars} intensity={1.5} />

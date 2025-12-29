@@ -29,6 +29,7 @@ const Index = () => {
   const [showDeepSky, setShowDeepSky] = useState(true);
   const [showMilkyWay, setShowMilkyWay] = useState(true);
   const [showNorthernLights, setShowNorthernLights] = useState(false);
+  const [expansiveAurora, setExpansiveAurora] = useState(false);
   const [showShootingStars, setShowShootingStars] = useState(true);
   const [showISS, setShowISS] = useState(true);
   const [timeLapseEnabled, setTimeLapseEnabled] = useState(false);
@@ -148,6 +149,7 @@ const Index = () => {
           showShootingStars={showShootingStars}
           showISS={showISS}
           vrMode={vrMode}
+          expansiveAurora={expansiveAurora}
           selectedConstellation={selectedConstellation}
           onObjectSelect={handleObjectSelect}
           cameraRef={cameraRef}
@@ -312,6 +314,8 @@ const Index = () => {
         onShowConstellationLinesChange={setShowConstellationLines}
         showISS={showISS}
         onShowISSChange={setShowISS}
+        expansiveAurora={expansiveAurora}
+        onExpansiveAuroraChange={setExpansiveAurora}
         arMode={arMode}
         onArModeChange={setArMode}
         vrMode={vrMode}

@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Glasses, X, Smartphone, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Canvas } from '@react-three/fiber';
+import * as THREE from 'three';
 
 interface VRModeProps {
   enabled: boolean;
@@ -13,7 +15,6 @@ export function VRModeButton({ enabled, onToggle }: { enabled: boolean; onToggle
   const [vrSupported, setVrSupported] = useState(false);
   
   useEffect(() => {
-    // Check for WebXR support
     if ('xr' in navigator) {
       (navigator as any).xr?.isSessionSupported?.('immersive-vr').then((supported: boolean) => {
         setVrSupported(supported);
@@ -36,23 +37,23 @@ export function VRModeButton({ enabled, onToggle }: { enabled: boolean; onToggle
   );
 }
 
-export function VROverlay({ 
-  enabled, 
-  onExit 
-}: { 
-  enabled: boolean; 
+interface VROverlayProps {
+  enabled: boolean;
   onExit: () => void;
-}) {
+  children?: React.ReactNode;
+}
+
+export function VROverlay({ enabled, onExit, children }: VROverlayProps) {
   const [orientation, setOrientation] = useState({ alpha: 0, beta: 0, gamma: 0 });
+  const [showInstructions, setShowInstructions] = useState(true);
   
   useEffect(() => {
     if (!enabled) return;
     
-    // Request fullscreen
+    // Request fullscreen and lock to landscape
     const requestFullscreen = async () => {
       try {
         await document.documentElement.requestFullscreen();
-        // Lock to landscape
         if (screen.orientation && 'lock' in screen.orientation) {
           try {
             await (screen.orientation as any).lock('landscape');
@@ -90,7 +91,11 @@ export function VROverlay({
       window.addEventListener('deviceorientation', handleOrientation, true);
     }
     
+    // Hide instructions after delay
+    const timer = setTimeout(() => setShowInstructions(false), 4000);
+    
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('deviceorientation', handleOrientation, true);
       if (document.fullscreenElement) {
         document.exitFullscreen().catch(() => {});
@@ -104,101 +109,88 @@ export function VROverlay({
   if (!enabled) return null;
   
   return (
-    <>
-      {/* VR Stereoscopic divider line */}
-      <div className="fixed inset-0 z-[100] pointer-events-none">
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-black" />
-        
-        {/* Left eye crosshair */}
-        <div className="absolute left-[25%] top-1/2 -translate-x-1/2 -translate-y-1/2">
-          <div className="w-8 h-8 border-2 border-white/30 rounded-full" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-1 h-1 bg-white/50 rounded-full" />
+    <div className="fixed inset-0 z-[100] bg-black">
+      {/* Split screen container - landscape layout */}
+      <div className="w-full h-full flex flex-row">
+        {/* Left eye view */}
+        <div className="w-1/2 h-full relative overflow-hidden border-r border-black">
+          <div className="absolute inset-0">
+            {children}
+          </div>
+          {/* Left eye lens distortion overlay */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/30" />
+          </div>
+          {/* Left crosshair */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+            <div className="w-6 h-6 border border-white/20 rounded-full" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-1 h-1 bg-white/40 rounded-full" />
+            </div>
           </div>
         </div>
         
-        {/* Right eye crosshair */}
-        <div className="absolute left-[75%] top-1/2 -translate-x-1/2 -translate-y-1/2">
-          <div className="w-8 h-8 border-2 border-white/30 rounded-full" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-1 h-1 bg-white/50 rounded-full" />
-          </div>
-        </div>
+        {/* Center divider */}
+        <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-black z-10 -translate-x-1/2" />
         
-        {/* Cardboard frame indicators */}
-        <div className="absolute top-2 left-2 right-2 flex justify-between">
-          <div className="w-8 h-8 border-t-2 border-l-2 border-white/20 rounded-tl-lg" />
-          <div className="w-8 h-8 border-t-2 border-r-2 border-white/20 rounded-tr-lg" />
-        </div>
-        <div className="absolute bottom-2 left-2 right-2 flex justify-between">
-          <div className="w-8 h-8 border-b-2 border-l-2 border-white/20 rounded-bl-lg" />
-          <div className="w-8 h-8 border-b-2 border-r-2 border-white/20 rounded-br-lg" />
+        {/* Right eye view */}
+        <div className="w-1/2 h-full relative overflow-hidden border-l border-black">
+          <div className="absolute inset-0">
+            {children}
+          </div>
+          {/* Right eye lens distortion overlay */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/30" />
+          </div>
+          {/* Right crosshair */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+            <div className="w-6 h-6 border border-white/20 rounded-full" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-1 h-1 bg-white/40 rounded-full" />
+            </div>
+          </div>
         </div>
       </div>
       
-      {/* Exit button - positioned for easy tap */}
+      {/* Cardboard frame corners */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-white/15 rounded-tl-lg" />
+        <div className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-white/15 rounded-tr-lg" />
+        <div className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-white/15 rounded-bl-lg" />
+        <div className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-white/15 rounded-br-lg" />
+      </div>
+      
+      {/* Exit button */}
       <button
         onClick={onExit}
-        className="fixed top-4 left-4 z-[110] glass rounded-full p-3 pointer-events-auto"
+        className="fixed top-3 left-3 z-[110] bg-black/50 backdrop-blur-sm rounded-full p-2 pointer-events-auto border border-white/20"
       >
-        <X className="w-6 h-6" />
+        <X className="w-5 h-5 text-white/80" />
       </button>
       
-      {/* VR instructions - shows briefly */}
-      <VRInstructions />
-    </>
-  );
-}
-
-function VRInstructions() {
-  const [visible, setVisible] = useState(true);
-  
-  useEffect(() => {
-    const timer = setTimeout(() => setVisible(false), 5000);
-    return () => clearTimeout(timer);
-  }, []);
-  
-  if (!visible) return null;
-  
-  return (
-    <div className="fixed inset-0 z-[105] flex items-center justify-center pointer-events-none">
-      <div className="glass rounded-2xl p-6 max-w-sm mx-4 text-center animate-fade-in">
-        <Smartphone className="w-12 h-12 mx-auto mb-4 text-primary" />
-        <h3 className="text-lg font-bold mb-2">VR Mode Active</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Place your phone in a VR headset or cardboard viewer.
-          Move your head to look around the sky.
-        </p>
-        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <AlertCircle className="w-4 h-4" />
-          <span>Tap the X to exit VR mode</span>
+      {/* VR Instructions */}
+      {showInstructions && (
+        <div className="fixed inset-0 z-[105] flex items-center justify-center pointer-events-none">
+          <div className="bg-black/80 backdrop-blur-md rounded-2xl p-6 max-w-xs mx-4 text-center border border-white/10">
+            <Smartphone className="w-10 h-10 mx-auto mb-3 text-purple-400" />
+            <h3 className="text-base font-bold text-white mb-2">VR Mode Active</h3>
+            <p className="text-xs text-white/70 mb-3">
+              Place phone in VR headset. Move your head to explore the sky.
+            </p>
+            <div className="flex items-center justify-center gap-1.5 text-xs text-white/50">
+              <AlertCircle className="w-3 h-3" />
+              <span>Tap X to exit</span>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-// Stereoscopic camera setup for Three.js
+// Hook for stereoscopic camera offset
 export function useVRCamera(enabled: boolean) {
-  const [eyeSeparation] = useState(0.064); // Standard IPD in meters
+  const [eyeSeparation] = useState(0.064);
   
-  const getLeftEyeMatrix = useCallback((camera: THREE.Camera) => {
-    if (!enabled) return camera.matrixWorld;
-    
-    const leftEyeMatrix = camera.matrixWorld.clone();
-    leftEyeMatrix.elements[12] -= eyeSeparation / 2;
-    return leftEyeMatrix;
-  }, [enabled, eyeSeparation]);
-  
-  const getRightEyeMatrix = useCallback((camera: THREE.Camera) => {
-    if (!enabled) return camera.matrixWorld;
-    
-    const rightEyeMatrix = camera.matrixWorld.clone();
-    rightEyeMatrix.elements[12] += eyeSeparation / 2;
-    return rightEyeMatrix;
-  }, [enabled, eyeSeparation]);
-  
-  return { getLeftEyeMatrix, getRightEyeMatrix, eyeSeparation };
+  return { eyeSeparation };
 }
-
-import * as THREE from 'three';
