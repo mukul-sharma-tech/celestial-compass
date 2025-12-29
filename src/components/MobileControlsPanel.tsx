@@ -22,6 +22,8 @@ interface MobileControlsPanelProps {
   onShowConstellationLinesChange: (value: boolean) => void;
   showISS: boolean;
   onShowISSChange: (value: boolean) => void;
+  expansiveAurora: boolean;
+  onExpansiveAuroraChange: (value: boolean) => void;
   arMode: boolean;
   onArModeChange: (value: boolean) => void;
   vrMode: boolean;
@@ -52,6 +54,8 @@ export function MobileControlsPanel({
   onShowConstellationLinesChange,
   showISS,
   onShowISSChange,
+  expansiveAurora,
+  onExpansiveAuroraChange,
   arMode,
   onArModeChange,
   vrMode,
@@ -233,6 +237,12 @@ export function MobileControlsPanel({
                 label="ISS Track"
                 checked={showISS}
                 onChange={onShowISSChange}
+              />
+              <ToggleItem
+                id="expansive-m"
+                label="Vibrant Aurora"
+                checked={expansiveAurora}
+                onChange={onExpansiveAuroraChange}
               />
               <ToggleItem
                 id="compass-m"

@@ -16,6 +16,7 @@ const auroraVertexShader = `
 const auroraFragmentShader = `
   uniform float time;
   uniform float intensity;
+  uniform float expansive;
   varying vec3 vPosition;
   varying vec2 vUv;
   
@@ -71,49 +72,84 @@ const auroraFragmentShader = `
   void main() {
     vec3 pos = normalize(vPosition);
     
-    // Only show in upper hemisphere (north)
-    float northFade = smoothstep(0.2, 0.7, pos.y);
-    if(pos.y < 0.1) discard;
+    // Expansive mode - aurora spans entire sky like milky way
+    float verticalCoverage;
+    if(expansive > 0.5) {
+      // Full sky coverage - wraps around like milky way band
+      verticalCoverage = 1.0;
+    } else {
+      // Traditional northern aurora - only in upper hemisphere
+      verticalCoverage = smoothstep(0.2, 0.7, pos.y);
+      if(pos.y < 0.1) discard;
+    }
     
-    // Horizontal position for curtain effect
+    // Horizontal position for curtain/band effect
     float angle = atan(pos.x, pos.z);
-    float height = pos.y;
+    float height = expansive > 0.5 ? (pos.y * 0.5 + 0.5) : pos.y;
     
-    // Multi-layered flowing noise
-    float t = time * 0.2;
-    float noise1 = snoise(vec3(angle * 2.0, height * 3.0 + t, t * 0.5)) * 0.5 + 0.5;
-    float noise2 = snoise(vec3(angle * 4.0 + 100.0, height * 5.0 + t * 1.5, t * 0.3)) * 0.5 + 0.5;
-    float noise3 = snoise(vec3(angle * 8.0 + 200.0, height * 8.0 + t * 2.0, t * 0.2)) * 0.5 + 0.5;
+    // Multi-layered flowing noise - more layers for expansive mode
+    float t = time * 0.15;
+    float noise1 = snoise(vec3(angle * 3.0, height * 4.0 + t, t * 0.4)) * 0.5 + 0.5;
+    float noise2 = snoise(vec3(angle * 6.0 + 100.0, height * 7.0 + t * 1.2, t * 0.25)) * 0.5 + 0.5;
+    float noise3 = snoise(vec3(angle * 12.0 + 200.0, height * 12.0 + t * 1.8, t * 0.15)) * 0.5 + 0.5;
+    float noise4 = snoise(vec3(angle * 2.0 + t * 0.3, height * 2.0 - t * 0.2, t * 0.5)) * 0.5 + 0.5;
     
-    // Curtain vertical bands
-    float curtains = sin(angle * 8.0 + noise1 * 3.0 + t) * 0.5 + 0.5;
-    curtains = pow(curtains, 2.0);
+    // Different patterns for expansive vs traditional
+    float pattern;
+    if(expansive > 0.5) {
+      // Milky way style - sweeping band across sky
+      float bandAngle = atan(pos.z, pos.x);
+      float bandPos = sin(bandAngle * 0.5 + pos.y * 2.0) * 0.5 + 0.5;
+      float band = exp(-pow((bandPos - 0.5), 2.0) * 4.0);
+      
+      // Flowing ribbons
+      float ribbons = sin(angle * 5.0 + noise1 * 4.0 + t * 2.0) * 0.5 + 0.5;
+      ribbons = pow(ribbons, 1.5);
+      
+      // Vertical streamers
+      float streamers = pow(noise2 * noise3, 0.8);
+      
+      // Combine for expansive aurora
+      pattern = (band * 0.6 + ribbons * 0.3 + streamers * 0.4) * noise4;
+      pattern = pow(pattern, 0.9) * 1.5;
+    } else {
+      // Traditional curtain effect
+      float curtains = sin(angle * 8.0 + noise1 * 3.0 + t) * 0.5 + 0.5;
+      curtains = pow(curtains, 2.0);
+      float rays = pow(noise2, 1.5) * noise3;
+      float verticalFade = exp(-pow((height - 0.4), 2.0) * 3.0);
+      pattern = curtains * rays * verticalFade * verticalCoverage;
+    }
     
-    // Vertical rays
-    float rays = pow(noise2, 1.5) * noise3;
+    float aurora = pattern * intensity;
     
-    // Vertical fade - brighter at bottom, fading up
-    float verticalFade = exp(-pow((height - 0.4), 2.0) * 3.0);
+    // Enhanced vibrant color palette
+    vec3 brightGreen = vec3(0.2, 1.0, 0.4);
+    vec3 cyan = vec3(0.1, 0.9, 1.0);
+    vec3 magenta = vec3(1.0, 0.2, 0.6);
+    vec3 purple = vec3(0.6, 0.1, 1.0);
+    vec3 pink = vec3(1.0, 0.4, 0.7);
+    vec3 blue = vec3(0.2, 0.4, 1.0);
     
-    // Combine
-    float aurora = curtains * rays * verticalFade * northFade;
-    aurora = pow(aurora, 1.2) * intensity;
+    // Dynamic color mixing based on position and noise
+    vec3 color;
+    if(expansive > 0.5) {
+      // More vibrant, varied colors for expansive mode
+      color = mix(brightGreen, cyan, noise1);
+      color = mix(color, magenta, noise2 * 0.6);
+      color = mix(color, purple, pow(abs(pos.y), 1.5) * noise3 * 0.7);
+      color = mix(color, pink, noise4 * 0.4);
+      color = mix(color, blue, (1.0 - noise1) * 0.3);
+      color *= 1.2 + noise1 * 0.6;
+    } else {
+      // Traditional green-dominant aurora
+      color = mix(brightGreen, cyan, noise1 * 0.5);
+      color = mix(color, purple, pow(height, 2.0) * noise2 * 0.6);
+      color = mix(color, pink, pow(height, 3.0) * noise3 * 0.3);
+      color *= 0.8 + noise1 * 0.4;
+    }
     
-    // Aurora colors - green dominant with hints of purple and pink
-    vec3 green = vec3(0.3, 0.9, 0.4);
-    vec3 cyan = vec3(0.2, 0.8, 0.9);
-    vec3 purple = vec3(0.6, 0.2, 0.8);
-    vec3 pink = vec3(0.9, 0.3, 0.5);
-    
-    // Color gradients based on height and noise
-    vec3 color = mix(green, cyan, noise1 * 0.5);
-    color = mix(color, purple, pow(height, 2.0) * noise2 * 0.6);
-    color = mix(color, pink, pow(height, 3.0) * noise3 * 0.3);
-    
-    // Add some brightness variation
-    color *= 0.8 + noise1 * 0.4;
-    
-    float alpha = aurora * 0.6;
+    float alpha = aurora * (expansive > 0.5 ? 0.7 : 0.6);
     if(alpha < 0.01) discard;
     
     gl_FragColor = vec4(color, alpha);
@@ -123,15 +159,17 @@ const auroraFragmentShader = `
 interface NorthernLightsProps {
   enabled: boolean;
   intensity?: number;
+  expansive?: boolean;
 }
 
-export function NorthernLights({ enabled, intensity = 1.0 }: NorthernLightsProps) {
+export function NorthernLights({ enabled, intensity = 1.0, expansive = false }: NorthernLightsProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   
   const uniforms = useMemo(() => ({
     time: { value: 0 },
     intensity: { value: intensity },
-  }), [intensity]);
+    expansive: { value: expansive ? 1.0 : 0.0 },
+  }), []);
 
   useFrame(({ clock }) => {
     if (meshRef.current && enabled) {
@@ -139,6 +177,7 @@ export function NorthernLights({ enabled, intensity = 1.0 }: NorthernLightsProps
       if (mat.uniforms) {
         mat.uniforms.time.value = clock.getElapsedTime();
         mat.uniforms.intensity.value = intensity;
+        mat.uniforms.expansive.value = expansive ? 1.0 : 0.0;
       }
     }
   });
