@@ -50,7 +50,7 @@ const Index = () => {
   const [compassMode, setCompassMode] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   
-  const cameraRef = useRef<{ rotate: (dx: number, dy: number) => void }>(null);
+  const cameraRef = useRef<{ rotate: (dx: number, dy: number) => void; setAngles: (azimuth: number, polar: number) => void }>(null);
 
   // Request device orientation for AR mode
   useEffect(() => {

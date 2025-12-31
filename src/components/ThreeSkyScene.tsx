@@ -30,7 +30,10 @@ interface ThreeSkySceneProps {
   expansiveAurora?: boolean;
   selectedConstellation?: string | null;
   onObjectSelect: (object: { type: string; name: string; data: any } | null) => void;
-  cameraRef?: React.RefObject<{ rotate: (dx: number, dy: number) => void }>;
+  cameraRef?: React.RefObject<{
+    rotate: (dx: number, dy: number) => void;
+    setAngles: (azimuth: number, polar: number) => void;
+  }>;
   onNavigateTo?: (ra: number, dec: number) => void;
   eyeOffset?: number;
 }
@@ -713,26 +716,44 @@ function Moon({ location, date }: { location: { latitude: number; longitude: num
 }
 
 // Camera controller with external control support
-function CameraController({ cameraRef }: { cameraRef?: React.RefObject<{ rotate: (dx: number, dy: number) => void }> }) {
+function CameraController({
+  cameraRef,
+}: {
+  cameraRef?: React.RefObject<{
+    rotate: (dx: number, dy: number) => void;
+    setAngles: (azimuth: number, polar: number) => void;
+  }>;
+}) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
-  
+
   useEffect(() => {
     camera.position.set(0, 0, 0.1);
     camera.lookAt(0, 0, -1);
   }, [camera]);
 
-  useImperativeHandle(cameraRef, () => ({
-    rotate: (dx: number, dy: number) => {
-      if (controlsRef.current) {
-        const azimuth = controlsRef.current.getAzimuthalAngle();
-        const polar = controlsRef.current.getPolarAngle();
-        controlsRef.current.setAzimuthalAngle(azimuth + dx);
-        controlsRef.current.setPolarAngle(Math.max(0.1, Math.min(Math.PI - 0.1, polar + dy)));
-        controlsRef.current.update();
-      }
-    }
-  }), []);
+  useImperativeHandle(
+    cameraRef,
+    () => ({
+      rotate: (dx: number, dy: number) => {
+        if (controlsRef.current) {
+          const azimuth = controlsRef.current.getAzimuthalAngle();
+          const polar = controlsRef.current.getPolarAngle();
+          controlsRef.current.setAzimuthalAngle(azimuth + dx);
+          controlsRef.current.setPolarAngle(Math.max(0.1, Math.min(Math.PI - 0.1, polar + dy)));
+          controlsRef.current.update();
+        }
+      },
+      setAngles: (azimuth: number, polar: number) => {
+        if (controlsRef.current) {
+          controlsRef.current.setAzimuthalAngle(azimuth);
+          controlsRef.current.setPolarAngle(Math.max(0.1, Math.min(Math.PI - 0.1, polar)));
+          controlsRef.current.update();
+        }
+      },
+    }),
+    []
+  );
 
   return (
     <OrbitControls
@@ -779,11 +800,9 @@ export function ThreeSkyScene({
   cameraRef,
   eyeOffset = 0,
 }: ThreeSkySceneProps) {
-  // Calculate camera position with eye offset for stereoscopic VR
-  const cameraPosition: [number, number, number] = [eyeOffset, 0, 0.1];
   return (
     <Canvas
-      camera={{ fov: vrMode ? 100 : 75, near: 0.001, far: 2000, position: cameraPosition }}
+      camera={{ fov: vrMode ? 100 : 75, near: 0.001, far: 2000, position: [eyeOffset, 0, 0.1] }}
       gl={{ 
         antialias: true, 
         alpha: true,

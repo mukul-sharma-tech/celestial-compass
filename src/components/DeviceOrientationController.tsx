@@ -1,12 +1,16 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Compass, Navigation, RotateCcw, Lock, Unlock } from 'lucide-react';
+import { Compass, Navigation, Lock, Unlock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import * as THREE from 'three';
 
 interface DeviceOrientationControllerProps {
   enabled: boolean;
   onOrientationChange: (orientation: { alpha: number; beta: number; gamma: number }) => void;
   onCompassChange: (heading: number) => void;
-  cameraRef?: React.RefObject<{ rotate: (dx: number, dy: number) => void }>;
+  cameraRef?: React.RefObject<{
+    rotate: (dx: number, dy: number) => void;
+    setAngles: (azimuth: number, polar: number) => void;
+  }>;
 }
 
 export function DeviceOrientationController({
@@ -19,9 +23,8 @@ export function DeviceOrientationController({
   const [orientation, setOrientation] = useState({ alpha: 0, beta: 0, gamma: 0 });
   const [compassHeading, setCompassHeading] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
-  const lastOrientation = useRef({ alpha: 0, beta: 0 });
-  const smoothedOrientation = useRef({ alpha: 0, beta: 0 });
-  
+  const lastAngles = useRef<{ azimuth: number; polar: number } | null>(null);
+
   const requestPermission = useCallback(async () => {
     if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
       try {
@@ -33,77 +36,65 @@ export function DeviceOrientationController({
         setHasPermission(false);
         return false;
       }
-    } else {
-      // Non-iOS devices don't require permission
-      setHasPermission(true);
-      return true;
     }
+
+    // Non-iOS devices don't require permission
+    setHasPermission(true);
+    return true;
   }, []);
-  
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    // iOS requires a user gesture; don't auto-request.
+    if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+      setHasPermission(null);
+    } else {
+      setHasPermission(true);
+    }
+  }, [enabled]);
+
   useEffect(() => {
     if (!enabled || isLocked) return;
-    
-    let animationFrame: number;
-    
+    if (hasPermission !== true) return;
+
     const handleOrientation = (event: DeviceOrientationEvent) => {
       if (event.alpha === null || event.beta === null || event.gamma === null) return;
-      
+
       const newOrientation = {
         alpha: event.alpha,
         beta: event.beta,
         gamma: event.gamma,
       };
-      
+
       setOrientation(newOrientation);
       onOrientationChange(newOrientation);
-      
-      // Calculate compass heading
-      // webkitCompassHeading is more accurate on iOS
-      const heading = (event as any).webkitCompassHeading || 
-                     (360 - event.alpha);
+
+      const heading = (event as any).webkitCompassHeading ?? (360 - event.alpha);
       setCompassHeading(heading);
       onCompassChange(heading);
-      
-      // Apply smooth camera rotation based on device movement
-      if (cameraRef?.current) {
-        // Calculate deltas for smooth movement
-        const alphaDelta = newOrientation.alpha - lastOrientation.current.alpha;
-        const betaDelta = newOrientation.beta - lastOrientation.current.beta;
-        
-        // Handle wrap-around for alpha (0-360)
-        const normalizedAlphaDelta = alphaDelta > 180 ? alphaDelta - 360 :
-                                     alphaDelta < -180 ? alphaDelta + 360 : alphaDelta;
-        
-        // Smooth the values
-        const smoothFactor = 0.1;
-        smoothedOrientation.current.alpha += (normalizedAlphaDelta - smoothedOrientation.current.alpha) * smoothFactor;
-        smoothedOrientation.current.beta += (betaDelta - smoothedOrientation.current.beta) * smoothFactor;
-        
-        // Apply rotation (scaled down for subtle movement)
-        const rotationScale = 0.003;
-        cameraRef.current.rotate(
-          smoothedOrientation.current.alpha * rotationScale,
-          smoothedOrientation.current.beta * rotationScale
-        );
-        
-        lastOrientation.current = { alpha: newOrientation.alpha, beta: newOrientation.beta };
+
+      // Absolute mapping (not deltas): heading -> azimuth, tilt -> polar
+      if (cameraRef?.current?.setAngles) {
+        const azimuth = THREE.MathUtils.degToRad(heading - 180);
+        const polar = THREE.MathUtils.degToRad(90 - newOrientation.beta);
+
+        // Light smoothing to avoid jitter
+        const smooth = 0.15;
+        if (!lastAngles.current) {
+          lastAngles.current = { azimuth, polar };
+        }
+        const nextAz = lastAngles.current.azimuth + (azimuth - lastAngles.current.azimuth) * smooth;
+        const nextPo = lastAngles.current.polar + (polar - lastAngles.current.polar) * smooth;
+        lastAngles.current = { azimuth: nextAz, polar: nextPo };
+
+        cameraRef.current.setAngles(nextAz, nextPo);
       }
     };
-    
-    const initOrientation = async () => {
-      const granted = await requestPermission();
-      if (granted) {
-        window.addEventListener('deviceorientation', handleOrientation, true);
-      }
-    };
-    
-    initOrientation();
-    
-    return () => {
-      window.removeEventListener('deviceorientation', handleOrientation, true);
-      if (animationFrame) cancelAnimationFrame(animationFrame);
-    };
-  }, [enabled, isLocked, onOrientationChange, onCompassChange, cameraRef, requestPermission]);
+
+    window.addEventListener('deviceorientation', handleOrientation, true);
+    return () => window.removeEventListener('deviceorientation', handleOrientation, true);
+  }, [enabled, isLocked, hasPermission, onOrientationChange, onCompassChange, cameraRef]);
   
   if (!enabled) return null;
   
@@ -177,15 +168,18 @@ export function DeviceOrientationController({
         </div>
       </div>
       
-      {hasPermission === false && (
+      {hasPermission !== true && (
         <Button
           variant="outline"
           size="sm"
-          onClick={requestPermission}
+          onClick={async () => {
+            const granted = await requestPermission();
+            if (granted) setHasPermission(true);
+          }}
           className="glass"
         >
           <Navigation className="w-4 h-4 mr-2" />
-          Enable Compass
+          Enable Motion
         </Button>
       )}
     </div>
