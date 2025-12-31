@@ -32,7 +32,10 @@ interface ThreeSkySceneProps {
   onObjectSelect: (object: { type: string; name: string; data: any } | null) => void;
   cameraRef?: React.RefObject<{ rotate: (dx: number, dy: number) => void }>;
   onNavigateTo?: (ra: number, dec: number) => void;
+  eyeOffset?: number;
 }
+
+export type { ThreeSkySceneProps };
 
 // Enhanced star vertex shader with atmospheric scintillation
 const starVertexShader = `
@@ -774,16 +777,19 @@ export function ThreeSkyScene({
   expansiveAurora = false,
   selectedConstellation,
   cameraRef,
+  eyeOffset = 0,
 }: ThreeSkySceneProps) {
+  // Calculate camera position with eye offset for stereoscopic VR
+  const cameraPosition: [number, number, number] = [eyeOffset, 0, 0.1];
   return (
     <Canvas
-      camera={{ fov: vrMode ? 90 : 75, near: 0.001, far: 2000, position: [0, 0, 0.1] }}
+      camera={{ fov: vrMode ? 100 : 75, near: 0.001, far: 2000, position: cameraPosition }}
       gl={{ 
         antialias: true, 
         alpha: true,
         powerPreference: 'high-performance',
       }}
-      style={{ background: 'transparent' }}
+      style={{ background: 'black' }}
     >
       <CameraController cameraRef={cameraRef} />
       
