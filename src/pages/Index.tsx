@@ -157,7 +157,22 @@ const Index = () => {
       </div>
 
       {/* VR Mode Overlay */}
-      <VROverlay enabled={vrMode} onExit={() => setVrMode(false)} />
+      <VROverlay 
+        enabled={vrMode} 
+        onExit={() => setVrMode(false)}
+        location={location}
+        date={date}
+        showConstellations={showConstellations}
+        showConstellationLines={showConstellationLines}
+        showPlanets={showPlanets}
+        showDeepSky={showDeepSky}
+        showMilkyWay={showMilkyWay}
+        showNorthernLights={showNorthernLights}
+        showShootingStars={showShootingStars}
+        showISS={showISS}
+        expansiveAurora={expansiveAurora}
+        selectedConstellation={selectedConstellation}
+      />
 
       {/* Device Orientation Controller */}
       <DeviceOrientationController
@@ -222,79 +237,93 @@ const Index = () => {
       {/* Joystick Controller */}
       <JoystickController onMove={handleJoystickMove} />
 
-      {/* Desktop Controls - Bottom Left */}
-      <div className="hidden md:flex fixed bottom-20 left-4 z-50 flex-col gap-2">
-        {/* Northern Lights Toggle */}
-        <div className="glass rounded-xl p-3">
+      {/* Desktop Controls - Bottom Right */}
+      <div className="hidden md:flex fixed bottom-20 right-4 z-50 flex-row gap-2 items-end">
+        {/* Quick Toggles Row */}
+        <div className="glass rounded-xl p-3 flex flex-row gap-4">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-green-400" />
-            <Label htmlFor="aurora" className="text-sm text-foreground/80">Aurora</Label>
+            <Label htmlFor="aurora" className="text-xs text-foreground/80">Aurora</Label>
             <Switch
               id="aurora"
               checked={showNorthernLights}
               onCheckedChange={setShowNorthernLights}
+              className="scale-90"
             />
           </div>
-        </div>
-
-        {/* Shooting Stars Toggle */}
-        <div className="glass rounded-xl p-3">
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-yellow-400" />
-            <Label htmlFor="meteors" className="text-sm text-foreground/80">Meteors</Label>
+            <Label htmlFor="meteors" className="text-xs text-foreground/80">Meteors</Label>
             <Switch
               id="meteors"
               checked={showShootingStars}
               onCheckedChange={setShowShootingStars}
+              className="scale-90"
             />
           </div>
-        </div>
-
-        {/* Constellation Lines Toggle */}
-        <div className="glass rounded-xl p-3">
           <div className="flex items-center gap-2">
             <GitBranch className="w-4 h-4 text-blue-400" />
-            <Label htmlFor="lines" className="text-sm text-foreground/80">Lines</Label>
+            <Label htmlFor="lines" className="text-xs text-foreground/80">Lines</Label>
             <Switch
               id="lines"
               checked={showConstellationLines}
               onCheckedChange={setShowConstellationLines}
+              className="scale-90"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Satellite className="w-4 h-4 text-orange-400" />
+            <Label htmlFor="iss" className="text-xs text-foreground/80">ISS</Label>
+            <Switch
+              id="iss"
+              checked={showISS}
+              onCheckedChange={setShowISS}
+              className="scale-90"
             />
           </div>
         </div>
 
-        {/* Time-Lapse Toggle */}
-        <div className="glass rounded-xl p-3">
-          <div className="flex items-center gap-2">
+        {/* Time-Lapse & VR Controls */}
+        <div className="flex flex-col gap-2">
+          <div className="glass rounded-xl p-3 flex items-center gap-2">
             <Clock className="w-4 h-4 text-primary" />
-            <Label htmlFor="timelapse" className="text-sm text-foreground/80">Time-Lapse</Label>
+            <Label htmlFor="timelapse" className="text-xs text-foreground/80">Time-Lapse</Label>
             <Switch
               id="timelapse"
               checked={timeLapseEnabled}
               onCheckedChange={setTimeLapseEnabled}
+              className="scale-90"
             />
           </div>
+          <TimeLapseController
+            enabled={timeLapseEnabled}
+            onToggle={() => setTimeLapseEnabled(!timeLapseEnabled)}
+            onDateChange={setDate}
+            baseDate={baseDate}
+            isVisible={timeLapseEnabled}
+          />
         </div>
 
-        {/* Time-Lapse Controller */}
-        <TimeLapseController
-          enabled={timeLapseEnabled}
-          onToggle={() => setTimeLapseEnabled(!timeLapseEnabled)}
-          onDateChange={setDate}
-          baseDate={baseDate}
-          isVisible={timeLapseEnabled}
-        />
+        {/* Mode Buttons */}
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => setArMode(!arMode)}
+            className={`glass rounded-full px-4 py-2 text-sm transition-all ${
+              arMode ? 'bg-primary/30 text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            {arMode ? 'AR ON' : 'AR OFF'}
+          </button>
+          <button
+            onClick={() => setVrMode(!vrMode)}
+            className={`glass rounded-full px-4 py-2 text-sm transition-all ${
+              vrMode ? 'bg-purple-500/30 text-purple-400' : 'text-muted-foreground'
+            }`}
+          >
+            VR Mode
+          </button>
+        </div>
       </div>
-
-      {/* AR Mode toggle - Desktop */}
-      <button
-        onClick={() => setArMode(!arMode)}
-        className={`hidden md:block fixed bottom-36 right-4 z-50 glass rounded-full px-4 py-2 text-sm transition-all ${
-          arMode ? 'bg-primary/30 text-primary' : 'text-muted-foreground'
-        }`}
-      >
-        {arMode ? 'AR ON' : 'AR OFF'}
-      </button>
 
       {/* Mobile Controls Panel */}
       <MobileControlsPanel

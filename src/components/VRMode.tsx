@@ -2,50 +2,60 @@ import { useState, useEffect, useRef } from 'react';
 import { Glasses, X, Smartphone, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Canvas } from '@react-three/fiber';
+import { ThreeSkyScene } from './ThreeSkyScene';
 import * as THREE from 'three';
 
-interface VRModeProps {
+interface VROverlayProps {
   enabled: boolean;
-  onToggle: () => void;
-  onEnterVR: () => void;
-  onExitVR: () => void;
+  onExit: () => void;
+  location: { latitude: number; longitude: number };
+  date: Date;
+  showConstellations: boolean;
+  showConstellationLines: boolean;
+  showPlanets: boolean;
+  showDeepSky: boolean;
+  showMilkyWay: boolean;
+  showNorthernLights: boolean;
+  showShootingStars: boolean;
+  showISS: boolean;
+  expansiveAurora: boolean;
+  selectedConstellation: string | null;
 }
 
 export function VRModeButton({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
-  const [vrSupported, setVrSupported] = useState(false);
-  
-  useEffect(() => {
-    if ('xr' in navigator) {
-      (navigator as any).xr?.isSessionSupported?.('immersive-vr').then((supported: boolean) => {
-        setVrSupported(supported);
-      }).catch(() => {
-        setVrSupported(false);
-      });
-    }
-  }, []);
-  
   return (
     <Button
       variant="ghost"
       size="icon"
       className={`h-10 w-10 ${enabled ? 'text-purple-400 bg-purple-500/20' : ''}`}
       onClick={onToggle}
-      title={vrSupported ? 'Enter VR Mode' : 'VR Cardboard Mode'}
+      title="VR Cardboard Mode"
     >
       <Glasses className="w-5 h-5" />
     </Button>
   );
 }
 
-interface VROverlayProps {
-  enabled: boolean;
-  onExit: () => void;
-  children?: React.ReactNode;
-}
-
-export function VROverlay({ enabled, onExit, children }: VROverlayProps) {
+export function VROverlay({ 
+  enabled, 
+  onExit,
+  location,
+  date,
+  showConstellations,
+  showConstellationLines,
+  showPlanets,
+  showDeepSky,
+  showMilkyWay,
+  showNorthernLights,
+  showShootingStars,
+  showISS,
+  expansiveAurora,
+  selectedConstellation,
+}: VROverlayProps) {
   const [orientation, setOrientation] = useState({ alpha: 0, beta: 0, gamma: 0 });
   const [showInstructions, setShowInstructions] = useState(true);
+  const leftCameraRef = useRef<any>(null);
+  const rightCameraRef = useRef<any>(null);
   
   useEffect(() => {
     if (!enabled) return;
@@ -76,6 +86,18 @@ export function VROverlay({ enabled, onExit, children }: VROverlayProps) {
           beta: event.beta,
           gamma: event.gamma,
         });
+        
+        // Sync camera rotation to both views
+        const alphaRad = THREE.MathUtils.degToRad(event.alpha);
+        const betaRad = THREE.MathUtils.degToRad(event.beta - 90);
+        const gammaRad = THREE.MathUtils.degToRad(event.gamma);
+        
+        if (leftCameraRef.current?.rotate) {
+          leftCameraRef.current.rotate(gammaRad * 0.02, betaRad * 0.02);
+        }
+        if (rightCameraRef.current?.rotate) {
+          rightCameraRef.current.rotate(gammaRad * 0.02, betaRad * 0.02);
+        }
       }
     };
     
@@ -107,57 +129,80 @@ export function VROverlay({ enabled, onExit, children }: VROverlayProps) {
   }, [enabled]);
   
   if (!enabled) return null;
+
+  const sceneProps = {
+    location,
+    date,
+    showConstellations,
+    showConstellationLines,
+    showPlanets,
+    showDeepSky,
+    showMilkyWay,
+    showNorthernLights,
+    showShootingStars,
+    showISS,
+    expansiveAurora,
+    selectedConstellation,
+    vrMode: true,
+    onObjectSelect: () => {},
+  };
   
   return (
     <div className="fixed inset-0 z-[100] bg-black">
       {/* Split screen container - landscape layout */}
       <div className="w-full h-full flex flex-row">
         {/* Left eye view */}
-        <div className="w-1/2 h-full relative overflow-hidden border-r border-black">
-          <div className="absolute inset-0">
-            {children}
-          </div>
+        <div className="w-1/2 h-full relative overflow-hidden">
+          <ThreeSkyScene 
+            {...sceneProps} 
+            cameraRef={leftCameraRef}
+            eyeOffset={-0.032}
+          />
           {/* Left eye lens distortion overlay */}
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/30" />
+            <div 
+              className="absolute inset-0" 
+              style={{
+                background: 'radial-gradient(circle at center, transparent 60%, rgba(0,0,0,0.4) 100%)'
+              }}
+            />
           </div>
           {/* Left crosshair */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-            <div className="w-6 h-6 border border-white/20 rounded-full" />
+            <div className="w-4 h-4 border border-white/20 rounded-full" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-1 h-1 bg-white/40 rounded-full" />
+              <div className="w-0.5 h-0.5 bg-white/40 rounded-full" />
             </div>
           </div>
         </div>
         
         {/* Center divider */}
-        <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-black z-10 -translate-x-1/2" />
+        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-black z-10 -translate-x-1/2" />
         
         {/* Right eye view */}
-        <div className="w-1/2 h-full relative overflow-hidden border-l border-black">
-          <div className="absolute inset-0">
-            {children}
-          </div>
+        <div className="w-1/2 h-full relative overflow-hidden">
+          <ThreeSkyScene 
+            {...sceneProps} 
+            cameraRef={rightCameraRef}
+            eyeOffset={0.032}
+          />
           {/* Right eye lens distortion overlay */}
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/30" />
+            <div 
+              className="absolute inset-0" 
+              style={{
+                background: 'radial-gradient(circle at center, transparent 60%, rgba(0,0,0,0.4) 100%)'
+              }}
+            />
           </div>
           {/* Right crosshair */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-            <div className="w-6 h-6 border border-white/20 rounded-full" />
+            <div className="w-4 h-4 border border-white/20 rounded-full" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-1 h-1 bg-white/40 rounded-full" />
+              <div className="w-0.5 h-0.5 bg-white/40 rounded-full" />
             </div>
           </div>
         </div>
-      </div>
-      
-      {/* Cardboard frame corners */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-white/15 rounded-tl-lg" />
-        <div className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-white/15 rounded-tr-lg" />
-        <div className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-white/15 rounded-bl-lg" />
-        <div className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-white/15 rounded-br-lg" />
       </div>
       
       {/* Exit button */}
